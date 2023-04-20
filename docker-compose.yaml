@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: "Ivashin"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "8403"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    ports:
+      - '54320:5432'
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
+  app:
+    image: tsapp
+    build:
+      dockerfile: Dockerfile
+      context: .
+    expose:
+      - 8000
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+volumes:
+  db:
+    driver: local
