@@ -1,7 +1,7 @@
 import {Sequelize} from 'sequelize'
 import {Dialect} from 'sequelize/types';
 import {DB_CONFIG} from '../config/db.config'
-import {diskStorage} from "multer";
+
 
 
 const sequelize = new Sequelize(
@@ -10,7 +10,7 @@ const sequelize = new Sequelize(
     DB_CONFIG.PASSWORD!,
     {
         host: DB_CONFIG.HOST,
-        dialect: 'postgres'
+        dialect: DB_CONFIG.DIALECT as Dialect
     }
 );
 
