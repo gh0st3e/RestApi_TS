@@ -1,26 +1,27 @@
 import sequelize from "./db"
-import fs from "fs"
 
 import {Model, DataTypes} from "sequelize";
 
-const userPdf = "assets/pdf/userPDF.pdf"
 class User extends Model {
     public email!: string;
     public firstName!: string;
     public lastName!: string;
     public image!: string;
-    public pdf!: any;
+    public pdf!: Buffer;
 
 }
 
+// Get all users from db.
 async function RetrieveAll() {
     return User.findAll({raw: true})
 }
 
-async function RetrieveById(email: string) {
+// Get user by email from db.
+async function RetrieveByEmail(email: string) {
     return User.findOne({where: {email: email}, raw: true})
 }
 
+// Insert user to db.
 async function Insert(user: User) {
     return User.create({
         email: user.email,
@@ -32,6 +33,7 @@ async function Insert(user: User) {
 
 }
 
+// Update user in db.
 async function Update(user: User) {
     return User.update(
         {
@@ -41,17 +43,15 @@ async function Update(user: User) {
         },
         {where: {email: user.email}}
     )
-
 }
 
+// Delete user from db.
 async function Delete(email: string) {
     return User.destroy({where: {email: email}})
 }
 
-async function SavePDF(email: string) {
-
-    const data = await fs.promises.readFile(userPdf);
-
+// Update user pdf-field in db.
+async function UpdateUserPDF(email: string, data: Buffer) {
     const [count] = await User.update(
         {
             pdf: Buffer.from(data),
@@ -82,7 +82,7 @@ User.init(
             type: DataTypes.BLOB
         }
     }, {
-        tableName: '\"users\"',
+        tableName: 'users',
         sequelize,
         createdAt: false,
         updatedAt: false,
@@ -90,12 +90,12 @@ User.init(
 )
 
 export default {
-    RetrieveById,
+    RetrieveByEmail,
     RetrieveAll,
     Insert,
     Update,
     Delete,
-    SavePDF,
+    UpdateUserPDF,
     User
 }
 

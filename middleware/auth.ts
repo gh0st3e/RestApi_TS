@@ -1,15 +1,19 @@
 import {User} from "../model/user";
+import {logger} from "../main"
+import {TOKEN_CONFIG} from "../config/token.config"
 
 import {IncomingHttpHeaders} from 'http';
 
 import {Request, Response, NextFunction} from 'express';
 import jwt from "jsonwebtoken"
 
-const accessTokenSecret = "mfd10sfk8lj2342fsd"
-const refreshTokenSecret = 'gsf340bdf11sk1nl45n';
+const accessTokenSecret = TOKEN_CONFIG.ATSecret!
+const refreshTokenSecret = TOKEN_CONFIG.RTSecret!
 const refreshTokens: string[] = [];
+const TokenLifeTime = '20m'
 
-export function GenerateToken(user: User) {
+// Generate new token.
+export const GenerateToken = (user: User) => {
 
     const accessToken = jwt.sign(
         {
@@ -18,7 +22,7 @@ export function GenerateToken(user: User) {
             lastName: user?.lastName
         },
         accessTokenSecret,
-        {expiresIn: '20m'}
+        {expiresIn: TokenLifeTime}
     )
 
     const refreshToken = jwt.sign(
@@ -30,9 +34,10 @@ export function GenerateToken(user: User) {
         , refreshTokenSecret);
     refreshTokens.push(refreshToken);
 
-    return [accessToken, refreshToken]
+    return [accessToken, '', refreshToken]
 }
 
+// Validate access token.
 export const AuthToken = (req: Request, res: Response, next: NextFunction) => {
     const authHeader: IncomingHttpHeaders = req.headers;
     if (authHeader.authorization != null) {
@@ -41,27 +46,31 @@ export const AuthToken = (req: Request, res: Response, next: NextFunction) => {
             const token = authHeaderValue.split(' ')[1];
             jwt.verify(token, accessTokenSecret, (err) => {
                 if (err) {
-                    return res.status(403).end("Forbidden");
-
+                    res.setHeader("Content-Type", "application/json")
+                    return res.status(403).end(JSON.stringify("Forbidden"));
+                } else {
+                    next()
                 }
             })
-            next()
+
         }
     } else {
-        return res.status(401).end("Unauthorized");
+        res.setHeader("Content-Type", "application/json")
+        return res.status(401).end(JSON.stringify("Unauthorized"));
     }
 }
 
-export function RefreshToken(token: string, user: User) {
-    console.log(token)
+// Refresh access token with refresh token.
+export const RefreshToken = (token: string, user: User) => {
+    logger.info(token)
     if (!refreshTokens.includes(token)) {
-        console.log("err in array")
+        logger.warn("No Such Refresh Token")
         return ""
     }
 
     return jwt.verify(token, refreshTokenSecret, (err) => {
         if (err) {
-            console.log(err)
+            logger.warn(err)
             return ""
         }
 
@@ -72,6 +81,12 @@ export function RefreshToken(token: string, user: User) {
                 lastName: user?.lastName
             },
             accessTokenSecret,
-            {expiresIn: '20m'});
+            {expiresIn: TokenLifeTime});
     });
+}
+
+export const Auth = {
+    GenerateToken,
+    RefreshToken,
+    AuthToken
 }
